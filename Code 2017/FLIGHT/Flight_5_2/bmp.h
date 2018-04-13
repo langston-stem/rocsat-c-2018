@@ -23,7 +23,7 @@ namespace Bmp{
 
  //error handeling
  volatile unsigned int bmperror_curCount=0;
- volatile unsigned int bmperror_minCount=100000;
+ volatile unsigned int bmperror_minCount=100000U;
  int bmp_error=0;//Gets set to 1 if the last function had an error.
  int bmp085GetError(){return bmp_error;}
  void bmp085ResetError(){bmp_error=0;}
