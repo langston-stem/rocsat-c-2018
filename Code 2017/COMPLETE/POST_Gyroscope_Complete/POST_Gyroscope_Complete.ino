@@ -35,9 +35,9 @@ void loop(){
 // Calculate the initialization values by placing the shield on a flat
 // surface and not moving or shaking it. Those values should be added
 // here in the code and must be a whole number
-   gyX = Gyro::readX() +16 /* + INSERT INITIALIZATION VALUE HERE */ ;
-   gyY = Gyro::readY() -49 /* + INSERT INITIALIZATION VALUE HERE */ ;
-   gyZ = Gyro::readZ() +1 /* + INSERT INITIALIZATION VALUE HERE */ ;
+   gyX = Gyro::readX() + 59 /* + INSERT INITIALIZATION VALUE HERE */ ;
+   gyY = Gyro::readY() - 15 /* + INSERT INITIALIZATION VALUE HERE */ ;
+   gyZ = Gyro::readZ() + 10 /* + INSERT INITIALIZATION VALUE HERE */ ;
 
 // Print the output rates to the terminal, seperated by a TAB character.
 // Right now we do not have a way to calibrate the data collected but this 
