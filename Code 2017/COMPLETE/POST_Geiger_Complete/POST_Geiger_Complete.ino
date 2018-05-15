@@ -47,6 +47,7 @@ void loop(){
    gc_counts = 0;
    
 // prints results on screen
+   Serial.print("Number of counts ");
    Serial.println(gc_cnt);
    Serial.println("Geiger counter reset"); 
    Serial.println(" ");   
