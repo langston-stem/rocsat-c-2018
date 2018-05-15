@@ -31,8 +31,13 @@ void setup() {
 
 void loop () {
   //This will be the buffer we use to write to the SD
-  dataString = String(digitalRead(PROG));
-  
+  //dataString = String(digitalRead(PROG));
+  if(digitalRead(PROG)){
+    dataString = "We did it!";
+  }
+  else{
+    dataString = "Does not work";
+  }
   if(writeDataToSD()){
     Serial.println("\nPrinted header to SD");
     Serial.println("Printed status of PROG pin (pull-data jumper) to SD");
