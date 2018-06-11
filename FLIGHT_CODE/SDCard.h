@@ -2,39 +2,39 @@
 #define _SDCard_h_
 
 // Controls for the data logging system //
-   const int LOG_INTERVAL = 0;   // milli seconds between entries
-   
+const int LOG_INTERVAL = 0;   // milli seconds between entries
+
 // Time keeper
-   uint32_t timeStamp = 0;     // The time stamp used when recording data points
-   
-// This is set to 53 for the RockOn Shield   
-   const int chipSelect = 53;  
+uint32_t timeStamp = 0;     // The time stamp used when recording data points
+
+// This is set to 53 for the RockOn Shield
+const int chipSelect = 53;
 
 // Variable for file name
-   char logFileName[16];
-   int ledState = 0;
+char logFileName[16];
+int ledState = 0;
 
 // Character strings for writing data to memory //
-   String dataString = ""; //holds the entire data string for each read cycle
-   String sensorNames = "Time Stamp (ms), Accel Low X, Accel Low Y, Accel Low Z, Accel Med X, Accel Med Y, Accel Med Z, Accel High Z, Temp (deg C), Pres (Pa), Geiger (counts), Humidity, Gyro X, Gyro Y, Gyro Z";
+String dataString = ""; //holds the entire data string for each read cycle
+String sensorNames = "Time Stamp (ms), Accel Low X, Accel Low Y, Accel Low Z, Accel Med X, Accel Med Y, Accel Med Z, Accel High Z, Temp (deg C), Pres (Pa), Geiger (counts), Humidity, Gyro X, Gyro Y, Gyro Z";
 
 // This function is called when the system starts or after a power reset to enable recording dat to the SD card.
-   boolean SDCardInit() {
-   if (groundMode) Serial.println("Initializing SD card...");
-   // see if the card is present and can be initialized:
-   if (!SD.begin(chipSelect))
-   {
+boolean SDCardInit() {
+  if (groundMode) Serial.println("Initializing SD card...");
+  // see if the card is present and can be initialized:
+  if (!SD.begin(chipSelect))
+  {
     if (groundMode) Serial.println("Card failed, or not present");
     //delay(100);
     // Can't do anything more.  Try another time....
     return 0;
-   }
-   // The Card is present so find an unused file name
-   if (groundMode) Serial.println("searching for an unused file name... ");
-   // Start with LOG0.CSV and count up until an unused file name is found.
+  }
+  // The Card is present so find an unused file name
+  if (groundMode) Serial.println("searching for an unused file name... ");
+  // Start with LOG0.CSV and count up until an unused file name is found.
 
-   for (long i = 0; i < 1000; i++)
-   {
+  for (long i = 0; i < 1000; i++)
+  {
     sprintf(logFileName, "LOG%d.CSV", i);
     if (!SD.exists(logFileName))
     {
