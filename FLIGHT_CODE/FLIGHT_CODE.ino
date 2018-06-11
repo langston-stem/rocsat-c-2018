@@ -13,15 +13,22 @@
 
 // [CONFIGURATION]
 
+const bool CENTERFUGE_MOTOR_ON = false; // when set to false, the motor will always be off
 const bool CENTERFUGE_MOTOR_TEST = false; // when set to true, run the motor at a constant speed
 const bool CLINOSTAT_MOTOR_ON = false; // when false, the clinostat motor will be always off
 
 const int clinostat_motor_speed = 84; // use to adjust the clinostat motor speed. max 255
 
-const int gyX_offset = 0; //set to X offset value for your board
-const int gyY_offset = 0; //set to Y offset value for your board
-const int gyZ_offset = 0; //set to Z offset value for your board
+const int gyX_offset = 73; //set to X offset value for your board
+const int gyY_offset = -15; //set to Y offset value for your board
+const int gyZ_offset = 6; //set to Z offset value for your board
 
+// PID Tuning constants
+const float Kp = 0.005;
+const float Ki = 0.0005;
+
+const int fakeGyroZ = 0; // set this to something other than 0 to test the PID
+                         // e.g. nominal rocket spin is 2500 (deg/sec)
 
 // [SENSOR LIST]
 /*
@@ -348,9 +355,9 @@ void loop()
 
   else {
     // If error count is not greater than 3, read gyro values
-    gyX = Gyro::readX() + gyX_offset; //enter your team's initialization values
-    gyY = Gyro::readY() + gyY_offset; //enter your team's initialization values
-    gyZ = Gyro::readZ() + gyZ_offset; //enter your team's initialization values
+    gyX = Gyro::readX() + gyX_offset;
+    gyY = Gyro::readY() + gyY_offset;
+    gyZ = Gyro::readZ() + gyZ_offset;
     // store in buffer, update cursor location
     dataString = dataString + ", " + String(gyX);
     dataString = dataString + ", " + String(gyY);
@@ -364,21 +371,68 @@ void loop()
 
   {
     uint32_t timeInterval;
-    uint32_t motorSpeed;
+    int motorSpeed;
 
     timeInterval = timeStamp - prevTimeStamp;
    
     // calculate speed in degrees per second.
     // sensor gives 3 counts per rotation, gear ratio is 50:1
     // (motor speed) = (actual counts) / (3 counts/rotation) / (50 gear ratio) * (360 degrees/rotation) / (timeInterval milliseconds)
-    motorSpeed = (long)tacho_cnt * 2400L / timeInterval;
+    motorSpeed = (long)tacho_cnt * 2400UL / timeInterval;
 
     dataString += ", " + String(motorSpeed);
 
-    if (CENTERFUGE_MOTOR_TEST) {
-      analogWrite(cf_pwm_pin, 255); // 50% power
-      digitalWrite(cf_a_pin, HIGH);
-      digitalWrite(cf_b_pin, LOW);
+    if (CENTERFUGE_MOTOR_ON) {
+      if (CENTERFUGE_MOTOR_TEST) {
+        analogWrite(cf_pwm_pin, 255); // 50% power
+        digitalWrite(cf_a_pin, HIGH);
+        digitalWrite(cf_b_pin, LOW);
+      }
+      else {
+        float error;
+        static float errorInt;
+        static int motorPWM;
+        int gyro = fakeGyroZ ? fakeGyroZ : gyZ;
+ 
+        // want error to be 0, e.g. motorSpeed is negative gyro speed
+        error = abs(gyro) - motorSpeed;
+
+        // integrate error over time (with damping factor)
+        errorInt = 0.9 * errorInt + 0.1 * error * 1000 / timeInterval;
+        
+        // limit error integral to +/-5000 deg/sec
+        if (errorInt > 5000) {
+          errorInt = 5000;
+        }
+        else if (errorInt < - 5000) {
+          errorInt = -5000;
+        }
+    
+        if (gyro > 0) {
+          digitalWrite(cf_a_pin, LOW);
+          digitalWrite(cf_b_pin, HIGH);
+        } else {
+          // coast if gyro is turning backwards
+          // DON'T TRY TO POWER HERE, IT WILL CAUSE RAPID CHAING IN DIRECTION!
+          digitalWrite(cf_a_pin, LOW);
+          digitalWrite(cf_b_pin, LOW);
+        }
+
+        // The PID calculation
+        motorPWM = motorPWM + error * Kp + errorInt * Ki;
+
+        // limit output to valid range
+        if (motorPWM > 255) {
+          motorPWM = 255;
+        }
+        else if (motorPWM < 0) {
+          motorPWM = 0;
+        }
+
+        analogWrite(cf_pwm_pin, motorPWM);
+
+        dataString += ", " + String(error) + ", " + String(errorInt) + ", " + String(motorPWM);
+      }
     }
   }
 
