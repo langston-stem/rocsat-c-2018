@@ -6,6 +6,7 @@ const int LOG_INTERVAL = 0;   // milli seconds between entries
 
 // Time keeper
 uint32_t timeStamp = 0;     // The time stamp used when recording data points
+uint32_t prevTimeStamp;
 
 // This is set to 53 for the RockOn Shield
 const int chipSelect = 53;
@@ -16,7 +17,7 @@ int ledState = 0;
 
 // Character strings for writing data to memory //
 String dataString = ""; //holds the entire data string for each read cycle
-String sensorNames = "Time Stamp (ms), Accel Low X, Accel Low Y, Accel Low Z, Accel Med X, Accel Med Y, Accel Med Z, Accel High Z, Temp (deg C), Pres (Pa), Geiger (counts), Humidity, Gyro X, Gyro Y, Gyro Z";
+String sensorNames = "Time Stamp (ms), Accel Low X, Accel Low Y, Accel Low Z, Accel Med X, Accel Med Y, Accel Med Z, Accel High Z, Temp (deg C), Pres (Pa), Geiger (counts), Humidity, Gyro X, Gyro Y, Gyro Z, Tacho (counts), Centerfuge Speed (deg/s)";
 
 // This function is called when the system starts or after a power reset to enable recording dat to the SD card.
 boolean SDCardInit() {

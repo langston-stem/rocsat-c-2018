@@ -1,17 +1,24 @@
 /*******************************************************************************
+   Langston University RocSat-C 2018
+
+   Authors:
+   David Lechner
+
+   Based on:   
    RockOn 2016 Workshop Flight Code
    Authors:
    Emily Logon, Dylan Herron, David Baird, Jared Stanley, Zak Hall
    Tess Geiger, Rafael Macias, Chris Koehler
-
-   Revision 44.0.0
-   -Remove flash
-   -Rework SD card code to be simpler
-   -Ground Mode uses serial print and writes to SD Card
-   -Flight Mode only writes to SD card and does not serial print to increase speed
-   Revision by: Jesse Austin
-   Date: 3/18/16, 4/29/16, 5/2/16
  *******************************************************************************/
+
+// [CONFIGURATION]
+
+const bool MOTOR_TEST = true; // when set to true, run the motor at a constant speed
+
+const int gyX_offset = 0; //set to X offset value for your board
+const int gyY_offset = 0; //set to Y offset value for your board
+const int gyZ_offset = 0; //set to Z offset value for your board
+
 
 // [SENSOR LIST]
 /*
@@ -23,7 +30,13 @@
    16g Accelerometer
    50g Accelerometer
    Humidity
+   Tachometer (Interrupt on pin 2)
 */
+
+// [MOTORS]
+/*
+ * Large centerfuge (PWM on pin 5, control on pins 6, 7)
+ */
 
 // MAIN PROGRAM /////////////////////////////////////////////////////////////////
 // Libraries //
@@ -35,7 +48,7 @@
 #include <Wire.h>  // Inter Integrated Circuit (I2C) communcation libary for I2C sensors 
 #include <SD.h>    // Secure Digital (SD) function library for the SD card        
 
-// Global Variables //
+// Global Variables - shared between files //
 const int LEDA = 48; //defined in blink_pattern_code.h
 const int LEDB = 49; //defined in blink_pattern_code.h
 const int PROG = 47;
@@ -68,9 +81,6 @@ const int HUM_SENS = A8;
 int gyX;
 int gyY;
 int gyZ;
-const int gyX_offset = 0; //set to X offset value for your board
-const int gyY_offset = 0; //set to Y offset value for your board
-const int gyZ_offset = 0; //set to Z offset value for your board
 
 // [PRESSURE-TEMPERATURE]
 // variables for Pressure and Temperature
@@ -80,8 +90,6 @@ long presur;
 // [GEIGER]
 // Geiger counter interrupts detected on pin 18
 const unsigned int gc_pin = 18;
-//  Attach the the 5th interrupt of the Arduino Mega.
-const unsigned int gc_intnumber = 5;
 // gc_cnt to store the number of counts
 // from gc_counts no counts are missed
 // while writing to buffer
@@ -90,12 +98,26 @@ unsigned int gc_cnt;
 // Value is initially set to zero because there are no counts.
 volatile unsigned int gc_counts = 0;
 
+// [TACHOMETER]
+const unsigned int tacho_pin = 2;
+unsigned int tacho_cnt;
+volatile unsigned int tacho_counts = 0;
+
+// [CENTERFUGE MOTOR]
+const unsigned int cf_pwm_pin = 5;
+const unsigned int cf_a_pin = 6;
+const unsigned int cf_b_pin = 7;
+
 // Function for interrupt
 // gc_counts is increased by 1
 // every time function called.
 // void loop will reset when written memory
 void gc_interrupt() {
   gc_counts++;
+}
+
+void tacho_interrupt() {
+  tacho_counts++;
 }
 
 void setup() {
@@ -196,9 +218,21 @@ void setup() {
   // Tells Arduino we expect to receive data from gc_pin
   pinMode(gc_pin, INPUT);
   // Sets up the interrupt to trigger for a rising edge
-  // gc_pin (18) corresponds to the 5th interrupt gc_intnumber
   // gc_interrupt is the function we want to call once we detect an interrupt
-  attachInterrupt(gc_intnumber, gc_interrupt, RISING);
+  attachInterrupt(digitalPinToInterrupt(gc_pin), gc_interrupt, RISING);
+
+  // [START_MOTOR]
+  pinMode(tacho_pin, INPUT);
+  attachInterrupt(digitalPinToInterrupt(tacho_pin), tacho_interrupt, RISING);
+
+  pinMode(cf_pwm_pin, OUTPUT);
+  pinMode(cf_a_pin, OUTPUT);
+  pinMode(cf_b_pin, OUTPUT);
+
+  // make sure the motor is stopped`
+  digitalWrite(cf_pwm_pin, LOW);
+  digitalWrite(cf_a_pin, LOW);
+  digitalWrite(cf_b_pin, LOW);
 
   // Startup Complete
   if (groundMode) Serial.println("Startup Complete->Start Loop");
@@ -217,7 +251,7 @@ void loop() {
   // millis returns number of milliseconds since program
   // started; writes this data to buffer
   // Clear data string before logging the time
-  dataString = "";
+  prevTimeStamp = timeStamp;
   timeStamp = millis();
   dataString = String(timeStamp);
 
@@ -295,6 +329,31 @@ void loop() {
     dataString = dataString + ", " + String(gyX);
     dataString = dataString + ", " + String(gyY);
     dataString = dataString + ", " + String(gyZ);
+  }
+
+  // [TACHOMETER READ]
+  tacho_cnt = tacho_counts;
+  tacho_counts = 0;
+  dataString += ", " + String(tacho_cnt);
+
+  {
+    uint32_t timeInterval;
+    uint32_t motorSpeed;
+
+    timeInterval = timeStamp - prevTimeStamp;
+   
+    // calculate speed in degrees per second.
+    // sensor gives 3 counts per rotation, gear ratio is 50:1
+    // (motor speed) = (actual counts) / (3 counts/rotation) / (50 gear ratio) * (360 degrees/rotation) / (timeInterval milliseconds)
+    motorSpeed = (long)tacho_cnt * 2400L / timeInterval;
+
+    dataString += ", " + String(motorSpeed);
+
+    if (MOTOR_TEST) {
+      analogWrite(cf_pwm_pin, 255); // 50% power
+      digitalWrite(cf_a_pin, HIGH);
+      digitalWrite(cf_b_pin, LOW);
+    }
   }
 
   // [SD_WRITE]
