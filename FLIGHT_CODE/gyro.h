@@ -112,7 +112,6 @@ unsigned char itgRead(char address, char registerAddress)
   Wire.endTransmission();
 
   //Ask the I2C device for data
-  Wire.beginTransmission(address);
   Wire.requestFrom(address, 1);
 
   //Wait for a response from the I2C device
@@ -124,9 +123,6 @@ unsigned char itgRead(char address, char registerAddress)
   //Save the data sent from the I2C device
   data = Wire.read();
   //}
-
-  //End the communication sequence.
-  Wire.endTransmission();
 
   //Return the data read during the operation
   return data;
