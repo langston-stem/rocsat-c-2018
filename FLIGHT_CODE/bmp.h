@@ -23,8 +23,8 @@ int md;
 long b5;
 
 //error handeling
-volatile unsigned int bmperror_curCount = 0;
-volatile unsigned int bmperror_minCount = 100000;
+volatile unsigned long bmperror_curCount = 0;
+volatile unsigned long bmperror_minCount = 100000;
 int bmp_error = 0; //Gets set to 1 if the last function had an error.
 int bmp085GetError() {
   return bmp_error;

@@ -4,8 +4,8 @@
 namespace Gyro
 {
 //error handeling
-volatile unsigned int gyroerror_curCount = 0;
-volatile unsigned int gyroerror_minCount = 100000;
+volatile unsigned long gyroerror_curCount = 0;
+volatile unsigned long gyroerror_minCount = 100000;
 int gyro_error = 0; //Gets set to 1 if the last function had an error.
 int gyroGetError() {
   return gyro_error;
