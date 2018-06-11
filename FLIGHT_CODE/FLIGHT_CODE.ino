@@ -13,7 +13,10 @@
 
 // [CONFIGURATION]
 
-const bool MOTOR_TEST = true; // when set to true, run the motor at a constant speed
+const bool CENTERFUGE_MOTOR_TEST = false; // when set to true, run the motor at a constant speed
+const bool CLINOSTAT_MOTOR_ON = false; // when false, the clinostat motor will be always off
+
+const int clinostat_motor_speed = 84; // use to adjust the clinostat motor speed. max 255
 
 const int gyX_offset = 0; //set to X offset value for your board
 const int gyY_offset = 0; //set to Y offset value for your board
@@ -107,6 +110,11 @@ volatile unsigned int tacho_counts = 0;
 const unsigned int cf_pwm_pin = 5;
 const unsigned int cf_a_pin = 6;
 const unsigned int cf_b_pin = 7;
+
+// [CLINOSTAT_MOTOR]
+const unsigned int cl_pwm_pin = 8;
+const unsigned int cl_a_pin = 9;
+const unsigned int cl_b_pin = 10;
 
 // Function for interrupt
 // gc_counts is increased by 1
@@ -229,17 +237,35 @@ void setup() {
   pinMode(cf_a_pin, OUTPUT);
   pinMode(cf_b_pin, OUTPUT);
 
-  // make sure the motor is stopped`
+  pinMode(cl_pwm_pin, OUTPUT);
+  pinMode(cl_a_pin, OUTPUT);
+  pinMode(cl_b_pin, OUTPUT);
+
+  // make sure the centerfuge motor is stopped`
   digitalWrite(cf_pwm_pin, LOW);
   digitalWrite(cf_a_pin, LOW);
   digitalWrite(cf_b_pin, LOW);
+
+  // make sure the clineostat motor is stopped`
+  digitalWrite(cl_pwm_pin, LOW);
+  digitalWrite(cl_a_pin, LOW);
+  digitalWrite(cl_b_pin, LOW);
 
   // Startup Complete
   if (groundMode) Serial.println("Startup Complete->Start Loop");
   if (groundMode) Serial.println(sensorNames);
 }
 
-void loop() {
+void loop()
+{
+  // [CLINEOSTAT_MOTOR]
+
+  if (CLINOSTAT_MOTOR_ON) {
+    analogWrite(cl_pwm_pin, clinostat_motor_speed);
+    digitalWrite(cl_a_pin, LOW);
+    digitalWrite(cl_b_pin, HIGH);
+  }
+  
   // [LOG INTERVAL]
   //   Set your sample rate in SDCard.h
   //   This code does not use a log interval
@@ -349,7 +375,7 @@ void loop() {
 
     dataString += ", " + String(motorSpeed);
 
-    if (MOTOR_TEST) {
+    if (CENTERFUGE_MOTOR_TEST) {
       analogWrite(cf_pwm_pin, 255); // 50% power
       digitalWrite(cf_a_pin, HIGH);
       digitalWrite(cf_b_pin, LOW);
