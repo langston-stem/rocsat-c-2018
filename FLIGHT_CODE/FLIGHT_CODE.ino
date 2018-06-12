@@ -28,7 +28,7 @@ const float Kp = 0.005;
 const float Ki = 0.0005;
 
 const int fakeGyroZ = 0; // set this to something other than 0 to test the PID
-                         // e.g. nominal rocket spin is 2500 (deg/sec)
+                         // e.g. nominal rocket spin is 1800 (deg/sec)
 
 // [SENSOR LIST]
 /*
@@ -392,7 +392,9 @@ void loop()
         float error;
         static float errorInt;
         static int motorPWM;
-        int gyro = fakeGyroZ ? fakeGyroZ : gyZ;
+        // if fakeGyroZ is not zero, use it, otherwise scale gyZ to degrees per second
+        // 14.375 comes from the datasheet
+        int gyro = fakeGyroZ ? fakeGyroZ : (int)((float)gyZ / 14.375);
  
         // want error to be 0, e.g. motorSpeed is negative gyro speed
         error = abs(gyro) - motorSpeed;
